@@ -16,8 +16,20 @@ const MAX_PLAYERS = 8;
 const $app = document.getElementById('app');
 const $overlay = document.getElementById('overlay');
 
+// Identité propre à chaque onglet (garde la même après un rechargement,
+// et deux onglets du même appareil comptent comme deux joueuses)
+function tabId() {
+  try {
+    let id = sessionStorage.getItem('wr_id');
+    if (!id) { id = uid(); sessionStorage.setItem('wr_id', id); }
+    return id;
+  } catch (e) {
+    return uid();
+  }
+}
+
 const me = {
-  id: store.get('wr_id', null) || (() => { const id = uid(); store.set('wr_id', id); return id; })(),
+  id: tabId(),
   name: store.get('wr_name', ''),
 };
 
