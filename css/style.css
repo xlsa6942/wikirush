@@ -365,6 +365,51 @@ img { max-width: 100%; }
 .wiki .gallery { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .wiki .mw-heading { margin-top: 4px; }
 
+
+/* Bandeau "abandonner" */
+.giveup {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border-radius: 14px; background: var(--yellow); color: var(--ink);
+  font-size: 14px; line-height: 1.35;
+}
+.giveup[hidden] { display: none; }
+.giveup-txt { min-width: 0; }
+.giveup-btn {
+  flex: none; min-height: 40px; padding: 0 14px; border: none; border-radius: 10px;
+  background: var(--ink); color: var(--white); font-weight: 700; font-size: 14px; cursor: pointer;
+}
+.giveup-btn:hover { background: #26235A; }
+
+/* Sommaire */
+.toc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc-list button {
+  width: 100%; min-height: 36px; padding: 6px 8px; border: none; border-radius: 8px; background: none;
+  text-align: left; font-size: 14px; line-height: 1.3; color: var(--ink-2); cursor: pointer;
+}
+.toc-list button:hover, .toc-list button:focus-visible { background: var(--ground); color: var(--violet); }
+.toc-list .toc-sub button { padding-left: 22px; font-size: 13px; color: var(--muted); }
+.toc-empty { font-size: 13px; color: var(--muted); padding: 6px 8px; }
+.toc-btn { position: relative; }
+.toc-count {
+  position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--violet); color: var(--white); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.toc-count:empty { display: none; }
+.sheet { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; }
+.sheet[hidden] { display: none; }
+.sheet-backdrop { position: absolute; inset: 0; border: none; background: rgba(23, 21, 59, .5); cursor: pointer; }
+.sheet-panel {
+  position: relative; width: 100%; max-height: 75dvh; overflow-y: auto;
+  background: var(--white); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + var(--safe-b));
+  animation: sheet-up .2s ease-out;
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; position: sticky; top: -16px; background: var(--white); padding: 4px 0; }
+.sheet-panel .toc-list button { min-height: 44px; font-size: 15px; }
+.sheet-panel .toc-list .toc-sub button { font-size: 14px; }
+body.sheet-open { overflow: hidden; }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
 /* ---------- Décompte ---------- */
 
 #overlay {
@@ -525,6 +570,9 @@ body[data-tone="out"] { background: var(--ink); }
   .side-path li span { color: var(--muted); }
   .side-path li span::after { content: ' ·'; }
   .side-path li.is-now { font-weight: 700; color: var(--ink); }
+  .race-side .toc-list { max-height: 38dvh; overflow-y: auto; margin: 0 -8px; }
+  .toc-btn, .sheet { display: none !important; }
+  .giveup { max-width: 1280px; width: 100%; margin: 0 auto; }
   .side-rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
   .wiki-wrap { background: var(--white); border: 1.5px solid var(--line); border-radius: 20px; padding: 32px 40px 48px; }
   .wiki-title { font-size: 38px; }

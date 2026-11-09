@@ -198,7 +198,7 @@ const host = {
       hostId: me.id,
       phase: 'lobby',
       round: 0,
-      settings: { start: 'same', rank: 'clicks', limit: 10, back: true, find: false, forbidden: true },
+      settings: { start: 'same', rank: 'clicks', limit: 10, back: true, find: false, forbidden: true, toc: true },
       players: {},
       order: [],
       options: [],
@@ -317,7 +317,7 @@ const host = {
         if (s.start === 'same' || s.start === 'each') next.start = s.start;
         if (s.rank === 'clicks' || s.rank === 'time') next.rank = s.rank;
         if ([0, 5, 10].includes(Number(s.limit))) next.limit = Number(s.limit);
-        for (const k of ['back', 'find', 'forbidden']) if (typeof s[k] === 'boolean') next[k] = s[k];
+        for (const k of ['back', 'find', 'forbidden', 'toc']) if (typeof s[k] === 'boolean') next[k] = s[k];
         r.settings = next;
         break;
       }
@@ -630,6 +630,7 @@ function initRace(room) {
 }
 
 function stopRaceListeners() {
+  document.body.classList.remove('sheet-open');
   document.removeEventListener('keydown', blockFind, true);
   clearInterval(tickTimer);
   tickTimer = null;
@@ -799,10 +800,49 @@ function showArticle() {
   const R = app.race;
   const box = document.getElementById('r-article');
   if (!R || !R.page || !box) return;
+  toggleTocSheet(false);
   box.innerHTML = wiki.buildArticle(R.page.html, { forbidden: R.rules.forbidden });
   const t = document.getElementById('r-title');
   if (t) t.textContent = R.page.display;
+  buildToc(box);
   window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+// Sommaire : la liste des sections de la page, pour y sauter direct
+function buildToc(box) {
+  const R = app.race;
+  if (!R || !R.rules.toc) return;
+  const items = [];
+  box.querySelectorAll('h2, h3').forEach((h, i) => {
+    const text = h.textContent.replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    h.dataset.toc = String(i);
+    items.push({ i, text, sub: h.tagName === 'H3' });
+  });
+  const html = items.length
+    ? items.map((it) => `<li class="${it.sub ? 'toc-sub' : ''}"><button type="button" data-action="toc-go" data-toc="${it.i}">${esc(it.text)}</button></li>`).join('')
+    : '<li class="toc-empty">Pas de sections sur cette page</li>';
+  ['r-side-toc', 'r-sheet-toc'].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+  const n = document.getElementById('r-toc-count');
+  if (n) n.textContent = items.length ? String(items.length) : '';
+}
+
+function scrollToSection(i) {
+  const h = document.querySelector(`#r-article [data-toc="${i}"]`);
+  if (!h) return;
+  const top = document.querySelector('.race-top');
+  const trail = document.querySelector('.trail');
+  let offset = (top ? top.offsetHeight : 0) + 12;
+  if (trail && getComputedStyle(trail).display !== 'none') offset += trail.offsetHeight;
+  const y = h.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, y), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+function toggleTocSheet(open) {
+  const sheet = document.getElementById('r-sheet');
+  if (!sheet) return;
+  sheet.hidden = !open;
+  document.body.classList.toggle('sheet-open', open);
 }
 
 function updateRaceUi() {
@@ -831,6 +871,19 @@ function updateRaceUi() {
   const others = r.order.map((id) => r.players[id]).filter((p) => p && p.id !== me.id && p.status !== 'idle');
   set('r-opps', others.slice(0, 2).map((p) => `<div class="opp">${avatar(p, 22)}<span>${oppText(p)}</span></div>`).join('') +
     (others.length > 2 ? `<div class="opp opp-more">+${others.length - 2}</div>` : ''));
+
+  // Quelqu'une a trouvé la cible : on propose d'abandonner
+  const winners = others.filter((p) => p.status === 'finished');
+  const giveup = document.getElementById('r-giveup');
+  if (giveup) {
+    const show = winners.length > 0 && R.status === 'racing';
+    giveup.hidden = !show;
+    if (show) {
+      const names = winners.map((p) => esc(p.name));
+      const who = names.length === 1 ? `<strong>${names[0]}</strong> a` : `<strong>${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}</strong> ont`;
+      set('r-giveup-txt', `${who} trouvé la cible ! Tu continues ou tu abandonnes ?`);
+    }
+  }
 
   // Barre latérale (ordi)
   const everyone = r.order.map((id) => r.players[id]).filter((p) => p && p.status !== 'idle');
@@ -975,13 +1028,14 @@ const SCREENS = {
           ${seg('rank', 'Classement', [['time', 'Au temps'], ['clicks', 'Au moins de clics']])}
           ${seg('limit', 'Limite de temps', [[5, '5 min'], [10, '10 min'], [0, 'Illimité']])}
           <button type="button" class="rules-toggle" data-action="rules-open" aria-expanded="${app.rulesOpen}">
-            <span class="rule-txt"><span class="rule-name">Règles personnalisées</span><span class="rule-sub">Retour, recherche, pages interdites</span></span>
+            <span class="rule-txt"><span class="rule-name">Règles personnalisées</span><span class="rule-sub">Retour, recherche, pages interdites, sommaire</span></span>
             ${app.rulesOpen ? ICON.chevU : ICON.chevD}
           </button>
           ${app.rulesOpen ? `<div class="rules-more">
             ${sw('back', 'Bouton retour', 'Revenir à la page précédente (compte 1 clic)')}
             ${sw('find', 'Rechercher dans la page', s.find ? 'Le Ctrl+F est autorisé' : 'Le Ctrl+F est bloqué')}
             ${sw('forbidden', 'Pages interdites', 'Pays et années bloqués')}
+            ${sw('toc', 'Sommaire', 'Les sections de la page sur le côté pour sauter direct')}
           </div>` : ''}
         </div>
       </section>
@@ -1070,6 +1124,7 @@ const SCREENS = {
     const limit = R.endLocal ? fmtTime(R.endLocal - R.startLocal) : null;
     const actions = (cls) => `
       <button type="button" class="btn btn-outline ${cls}" data-action="back" ${R.rules.back ? '' : 'disabled'}>${ICON.chevL}<span>${R.rules.back ? 'Page précédente' : 'Retour désactivé'}</span></button>
+      ${R.rules.toc && cls !== 'btn-top' ? `<button type="button" class="icon-btn toc-btn" data-action="toc-open" aria-label="Ouvrir le sommaire">${ICON.list}<span id="r-toc-count" class="toc-count"></span></button>` : ''}
       <button type="button" class="icon-btn ${cls === 'btn-top' ? 'icon-btn-dark' : ''}" data-action="abandon" aria-label="Abandonner la partie">${ICON.flag}</button>`;
     return `
     <main class="race">
@@ -1087,11 +1142,16 @@ const SCREENS = {
         </div>
         ${limit ? '<div class="limit-bar" aria-hidden="true"><div id="r-bar"></div></div>' : ''}
         <div class="opponents" id="r-opps"></div>
+        <div class="giveup" id="r-giveup" hidden>
+          <span class="giveup-txt"><span aria-hidden="true">🏁</span> <span id="r-giveup-txt"></span></span>
+          <button type="button" class="giveup-btn" data-action="abandon">Abandonner</button>
+        </div>
       </header>
       <nav class="trail" id="r-trail" aria-label="Ton chemin"></nav>
       <div class="race-body">
         <aside class="race-side">
           <section class="side-card"><h2 class="side-h">En direct</h2><div id="r-side-players" class="side-players"></div></section>
+          ${R.rules.toc ? '<section class="side-card"><h2 class="side-h">Sommaire</h2><ol id="r-side-toc" class="toc-list"></ol></section>' : ''}
           <section class="side-card"><h2 class="side-h">Ton chemin</h2><ol id="r-side-path" class="side-path"></ol></section>
           <section class="side-card"><h2 class="side-h">Règles</h2>
             <ul class="side-rules">
@@ -1099,6 +1159,7 @@ const SCREENS = {
               <li>Retour ${R.rules.back ? 'autorisé' : 'désactivé'}</li>
               <li>Ctrl+F ${R.rules.find ? 'autorisé' : 'bloqué'}</li>
               <li>${R.rules.forbidden ? 'Pays et années interdits' : 'Aucune page interdite'}</li>
+              <li>Sommaire ${R.rules.toc ? 'affiché' : 'masqué'}</li>
             </ul>
           </section>
         </aside>
@@ -1110,6 +1171,14 @@ const SCREENS = {
         </article>
       </div>
       <footer class="race-bottom">${actions('')}</footer>
+      ${R.rules.toc ? `<div class="sheet" id="r-sheet" hidden>
+        <button type="button" class="sheet-backdrop" data-action="toc-close" aria-label="Fermer le sommaire"></button>
+        <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+          <div class="sheet-head"><h2 class="h2" id="sheet-title">Sommaire</h2>
+            <button type="button" class="icon-btn" data-action="toc-close" aria-label="Fermer le sommaire">${ICON.close}</button></div>
+          <ol id="r-sheet-toc" class="toc-list"></ol>
+        </div>
+      </div>` : ''}
     </main>`;
   },
 
@@ -1471,6 +1540,12 @@ $app.addEventListener('click', (e) => {
     }
     case 'abandon':
       if (confirm('Abandonner cette manche ?')) abandonRace('abandon');
+      break;
+    case 'toc-open': toggleTocSheet(true); break;
+    case 'toc-close': toggleTocSheet(false); break;
+    case 'toc-go':
+      toggleTocSheet(false);
+      scrollToSection(btn.dataset.toc);
       break;
     case 'end': net.send({ t: 'end' }); break;
     case 'rematch': net.send({ t: 'rematch' }); break;

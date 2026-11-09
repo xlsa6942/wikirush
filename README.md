@@ -11,7 +11,7 @@ Une page Wikipédia au hasard, une cible connue, et la première qui l'atteint e
 3. L'hôte règle la partie puis clique sur **Démarrer**.
 4. Trois cibles connues sont proposées : chacune vote. La plus votée gagne (égalité : tirage au sort). Le vote dure 30 secondes, l'hôte peut lancer avant.
 5. Décompte 3, 2, 1… et c'est parti : on navigue dans Wikipédia directement sur le site.
-6. Celle qui atterrit sur la page cible déclenche les confettis 🎉 et attend les autres.
+6. Celle qui atterrit sur la page cible déclenche les confettis 🎉 et attend les autres. Dès qu'une joueuse a trouvé, les autres voient un bandeau avec un bouton **Abandonner** si elles préfèrent passer aux résultats.
 7. Résultats : podium et chemin de chacune, page par page. Puis revanche !
 
 ## Règles et options
@@ -24,6 +24,7 @@ Une page Wikipédia au hasard, une cible connue, et la première qui l'atteint e
 | Bouton retour | Autorisé ou non (un retour compte comme un clic) |
 | Rechercher dans la page | Ctrl+F autorisé ou bloqué |
 | Pages interdites | Pays et années bloqués (ce sont des raccourcis vers presque tout) |
+| Sommaire | Les sections de la page sur le côté (ou via le bouton liste sur téléphone) pour y sauter direct, sans compter de clic |
 
 Les sons sont toujours activés. Les stats et l'historique des parties sont gardés sur chaque appareil.
 

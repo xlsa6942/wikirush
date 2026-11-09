@@ -88,6 +88,8 @@ export const ICON = {
   crown: svg('<path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"></path>', 28, 2),
   share: svg('<path d="M12 3v13M7 8l5-5 5 5M5 14v6h14v-6"></path>', 22),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path>', 12, 2.4),
+  list: svg('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path>', 20, 2.4),
+  close: svg('<path d="M18 6 6 18M6 6l12 12"></path>', 20, 2.4),
   door: svg('<path d="M14 3h5v18h-5M10 17l5-5-5-5M15 12H3"></path>', 20),
 };
 
