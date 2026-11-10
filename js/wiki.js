@@ -172,9 +172,10 @@ export function buildArticle(html, { forbidden = true } = {}) {
     if (src && src.startsWith('//')) img.setAttribute('src', 'https:' + src);
     const srcset = img.getAttribute('srcset');
     if (srcset) img.setAttribute('srcset', srcset.replace(/(^|,\s*)\/\//g, '$1https://'));
+    // On garde width/height : le navigateur réserve la place de l'image avant
+    // qu'elle charge, donc la page ne "saute" pas (important pour le sommaire)
     img.setAttribute('loading', 'lazy');
-    img.removeAttribute('width');
-    img.removeAttribute('height');
+    img.setAttribute('decoding', 'async');
   });
 
   root.querySelectorAll('table').forEach((table) => {

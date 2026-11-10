@@ -12,7 +12,7 @@ Une page Wikipédia au hasard, une cible connue, et la première qui l'atteint e
 4. Trois cibles connues sont proposées : chacune vote. La plus votée gagne (égalité : tirage au sort). Le vote dure 30 secondes, l'hôte peut lancer avant.
 5. Décompte 3, 2, 1… et c'est parti : on navigue dans Wikipédia directement sur le site.
 6. Celle qui atterrit sur la page cible déclenche les confettis 🎉 et attend les autres. Dès qu'une joueuse a trouvé, les autres voient un bandeau avec un bouton **Abandonner** si elles préfèrent passer aux résultats.
-7. Résultats : podium et chemin de chacune, page par page. Puis revanche !
+7. Résultats : podium, chemin de chacune page par page, et **classement de la salle** sur toutes les manches (victoires, arrivées, record). Puis revanche !
 
 ## Règles et options
 
@@ -22,7 +22,7 @@ Une page Wikipédia au hasard, une cible connue, et la première qui l'atteint e
 | Classement | Au temps, ou au moins de clics |
 | Limite de temps | 5 min, 10 min, illimité |
 | Bouton retour | Autorisé ou non (un retour compte comme un clic) |
-| Rechercher dans la page | Ctrl+F autorisé ou bloqué |
+| Recherche Ctrl+F | Chercher un mot dans la page autorisé ou bloqué |
 | Pages interdites | Pays et années bloqués (ce sont des raccourcis vers presque tout) |
 | Sommaire | Les sections de la page sur le côté (ou via le bouton liste sur téléphone) pour y sauter direct, sans compter de clic |
 

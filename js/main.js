@@ -210,6 +210,7 @@ const host = {
       raceEndAt: null,
       loading: null,
       error: null,
+      history: [],
       now: Date.now(),
     };
     this.addPlayer(me.id, me.name);
@@ -513,6 +514,13 @@ const host = {
     if (r.phase !== 'race' && r.phase !== 'countdown') return;
     this.clearTimers('go', 'end', 'endSoon');
     r.order.forEach((id) => { const p = r.players[id]; if (p.status === 'racing') p.status = 'timeout'; });
+    r.history.push({
+      round: r.round,
+      target: r.target ? r.target.title : '',
+      rank: r.settings.rank,
+      results: rankPlayers(r).map((p) => ({ id: p.id, name: p.name, color: p.color, status: p.status, clicks: p.clicks, time: p.time })),
+    });
+    if (r.history.length > 40) r.history = r.history.slice(-40);
     r.phase = 'results';
     this.publish();
   },
@@ -801,6 +809,7 @@ function showArticle() {
   const box = document.getElementById('r-article');
   if (!R || !R.page || !box) return;
   toggleTocSheet(false);
+  stopTocPin();
   box.innerHTML = wiki.buildArticle(R.page.html, { forbidden: R.rules.forbidden });
   const t = document.getElementById('r-title');
   if (t) t.textContent = R.page.display;
@@ -827,18 +836,42 @@ function buildToc(box) {
   if (n) n.textContent = items.length ? String(items.length) : '';
 }
 
+let tocPin = null;
+
+function stopTocPin() {
+  if (!tocPin) return;
+  clearInterval(tocPin.timer);
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => window.removeEventListener(ev, tocPin.stop));
+  tocPin = null;
+}
+
 function scrollToSection(i) {
   const h = document.querySelector(`#r-article [data-toc="${i}"]`);
   if (!h) return;
-  const top = document.querySelector('.race-top');
-  const trail = document.querySelector('.trail');
-  let offset = (top ? top.offsetHeight : 0) + 12;
-  if (trail && getComputedStyle(trail).display !== 'none') offset += trail.offsetHeight;
-  const y = h.getBoundingClientRect().top + window.scrollY - offset;
-  window.scrollTo({ top: Math.max(0, y), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  stopTocPin();
+  // Seul le bandeau du haut reste collé à l'écran pendant qu'on défile
+  const offset = () => {
+    const top = document.querySelector('.race-top');
+    return (top ? top.getBoundingClientRect().height : 0) + 12;
+  };
+  const go = () => window.scrollTo({ top: Math.max(0, h.getBoundingClientRect().top + window.scrollY - offset()), behavior: 'auto' });
+  go();
+  // Les images au-dessus peuvent encore finir de charger et décaler la page :
+  // on recale le titre pendant 2 secondes, sauf si la joueuse se met à défiler
+  const stop = () => stopTocPin();
+  let ticks = 0;
+  tocPin = {
+    stop,
+    timer: setInterval(() => {
+      if (Math.abs(h.getBoundingClientRect().top - offset()) > 3) go();
+      if (++ticks >= 20) stopTocPin();
+    }, 100),
+  };
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) => window.addEventListener(ev, stop, { passive: true }));
 }
 
 function toggleTocSheet(open) {
+  if (open) stopTocPin();
   const sheet = document.getElementById('r-sheet');
   if (!sheet) return;
   sheet.hidden = !open;
@@ -1020,6 +1053,7 @@ const SCREENS = {
         </div>
         ${players.length < 2 ? '<p class="hint">Envoie le code (ou le lien avec le bouton copier) à tes potes pour qu\'elles te rejoignent.</p>' : ''}
       </section>
+      ${scoreboard(r, { compact: true })}
       <section class="stack-sm">
         <h2 class="h2">Règles de la partie</h2>
         ${host ? '' : '<p class="hint">Seule l\'hôte peut modifier les règles.</p>'}
@@ -1028,12 +1062,12 @@ const SCREENS = {
           ${seg('rank', 'Classement', [['time', 'Au temps'], ['clicks', 'Au moins de clics']])}
           ${seg('limit', 'Limite de temps', [[5, '5 min'], [10, '10 min'], [0, 'Illimité']])}
           <button type="button" class="rules-toggle" data-action="rules-open" aria-expanded="${app.rulesOpen}">
-            <span class="rule-txt"><span class="rule-name">Règles personnalisées</span><span class="rule-sub">Retour, recherche, pages interdites, sommaire</span></span>
+            <span class="rule-txt"><span class="rule-name">Règles personnalisées</span><span class="rule-sub">Retour, Ctrl+F, pages interdites, sommaire</span></span>
             ${app.rulesOpen ? ICON.chevU : ICON.chevD}
           </button>
           ${app.rulesOpen ? `<div class="rules-more">
             ${sw('back', 'Bouton retour', 'Revenir à la page précédente (compte 1 clic)')}
-            ${sw('find', 'Rechercher dans la page', s.find ? 'Le Ctrl+F est autorisé' : 'Le Ctrl+F est bloqué')}
+            ${sw('find', 'Recherche Ctrl+F', s.find ? 'Chercher un mot dans la page est autorisé' : 'Chercher un mot dans la page est bloqué')}
             ${sw('forbidden', 'Pages interdites', 'Pays et années bloqués')}
             ${sw('toc', 'Sommaire', 'Les sections de la page sur le côté pour sauter direct')}
           </div>` : ''}
@@ -1237,6 +1271,7 @@ const SCREENS = {
     <main class="screen results">
       <div class="stack-sm">
         <h1 class="h1">Résultats</h1>
+        ${(r.history || []).length > 1 ? `<span class="kicker">Manche ${r.history.length}</span>` : ''}
         <div class="pills">
           <span class="pill pill-yellow">Cible : ${esc(r.target ? r.target.title : '')}</span>
           <span class="pill">Classement ${r.settings.rank === 'time' ? 'au temps' : 'aux clics'}</span>
@@ -1260,6 +1295,7 @@ const SCREENS = {
         ${finished.slice(3).map((p, i) => `<div class="rank-row"><span class="rank-n">${i + 4}</span>${avatar(p, 30)}<strong>${esc(p.name)}</strong><span class="rank-m">${metric(p)}</span></div>`).join('')}
         ${rest.map((p) => `<div class="rank-row is-out"><span class="rank-n">–</span>${avatar(p, 30)}<strong>${esc(p.name)}</strong><span class="rank-m">${p.status === 'timeout' ? 'Temps écoulé' : 'Abandon'} · ${p.clicks} clics</span></div>`).join('')}
       </div>` : ''}
+      ${scoreboard(r)}
       <section class="stack-sm">
         <h2 class="h2">Les chemins</h2>
         <div class="paths">
@@ -1323,6 +1359,84 @@ const SCREENS = {
     </main>`;
   },
 };
+
+// Classement de la salle : cumul de toutes les manches jouées ensemble
+function tally(r) {
+  const rows = new Map();
+  for (const h of r.history || []) {
+    h.results.forEach((res, i) => {
+      if (!rows.has(res.id)) rows.set(res.id, { id: res.id, wins: 0, podiums: 0, finished: 0, played: 0, clicks: 0, best: null });
+      const row = rows.get(res.id);
+      row.name = res.name;
+      row.color = res.color;
+      row.played += 1;
+      if (res.status === 'finished') {
+        row.finished += 1;
+        row.clicks += res.clicks;
+        if (i === 0) row.wins += 1;
+        if (i < 3) row.podiums += 1;
+        if (row.best == null || res.clicks < row.best) row.best = res.clicks;
+      }
+    });
+  }
+  for (const row of rows.values()) {
+    const live = r.players[row.id];
+    if (live) { row.name = live.name; row.color = live.color; }
+    row.here = !!live;
+    row.avg = row.finished ? row.clicks / row.finished : null;
+  }
+  return [...rows.values()].sort((a, b) =>
+    b.wins - a.wins || b.podiums - a.podiums || b.finished - a.finished || (a.avg ?? 1e9) - (b.avg ?? 1e9));
+}
+
+function scoreboard(r, { compact = false } = {}) {
+  const hist = r.history || [];
+  if (!hist.length) return '';
+  const rows = tally(r);
+  const leader = rows[0];
+  const tie = rows.length > 1 && rows[1].wins === leader.wins;
+  const n = hist.length;
+  let headline;
+  if (!leader.wins) headline = 'Personne n\'a encore gagné de manche';
+  else if (tie) headline = `Égalité en tête avec ${leader.wins} victoire${leader.wins > 1 ? 's' : ''} !`;
+  else headline = `<strong>${esc(leader.name)}</strong> mène avec ${leader.wins} victoire${leader.wins > 1 ? 's' : ''}`;
+  const medals = ['🥇', '🥈', '🥉'];
+  return `
+  <section class="stack-sm">
+    <div class="row-between"><h2 class="h2">Classement de la salle</h2><span class="pill">${n} manche${n > 1 ? 's' : ''}</span></div>
+    <div class="card board">
+      <p class="board-head">${headline}</p>
+      <div class="board-table" role="table" aria-label="Classement de la salle">
+        <div class="board-row board-cols" role="row">
+          <span role="columnheader" class="b-pos"><span class="sr-only">Place</span></span>
+          <span role="columnheader" class="b-name">Joueuse</span>
+          <span role="columnheader" class="b-num" title="Manches gagnées">Victoires</span>
+          <span role="columnheader" class="b-num" title="Cible trouvée">Arrivées</span>
+          <span role="columnheader" class="b-num b-opt" title="Moins de clics sur une manche">Record</span>
+        </div>
+        ${rows.map((row, i) => `
+        <div class="board-row ${row.here ? '' : 'is-gone'} ${i === 0 && row.wins && !tie ? 'is-lead' : ''}" role="row">
+          <span role="cell" class="b-pos">${row.wins ? (medals[i] || i + 1) : i + 1}</span>
+          <span role="cell" class="b-name">${avatar(row, 28)}<span class="b-txt">${esc(row.name)}${row.id === me.id ? ' <span class="you">(toi)</span>' : ''}${row.here ? '' : ' <span class="you">(partie)</span>'}</span></span>
+          <span role="cell" class="b-num b-big">${row.wins}</span>
+          <span role="cell" class="b-num">${row.finished}/${row.played}</span>
+          <span role="cell" class="b-num b-opt">${row.best != null ? `${row.best} clic${row.best > 1 ? 's' : ''}` : '–'}</span>
+        </div>`).join('')}
+      </div>
+      ${compact ? '' : `
+      <details class="rounds">
+        <summary>Voir les manches précédentes</summary>
+        <ol class="rounds-list">
+          ${hist.slice().reverse().map((h, k) => {
+            const w = h.results[0] && h.results[0].status === 'finished' ? h.results[0] : null;
+            return `<li><span class="r-n">${hist.length - k}</span><span class="r-t"><strong>${esc(h.target)}</strong>
+              <span>${w ? `${medals[0]} ${esc(w.name)} · ${w.clicks} clic${w.clicks > 1 ? 's' : ''} · ${fmtTime(w.time)}` : 'Personne n\'a trouvé'}</span></span></li>`;
+          }).join('')}
+        </ol>
+      </details>`}
+    </div>
+  </section>`;
+}
 
 function waitText(p) {
   if (p.status === 'finished') return `Arrivée ! ${p.clicks} clics · ${fmtTime(p.time)}`;

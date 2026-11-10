@@ -489,6 +489,40 @@ body[data-tone="out"] { background: var(--ink); }
 .path-list li.is-win { align-self: flex-start; font-weight: 700; background: var(--yellow); border-radius: 8px; padding: 3px 6px; }
 .path-list li.is-win span { color: var(--ink); }
 
+
+/* Classement de la salle */
+.board { padding: 14px 14px 6px; display: flex; flex-direction: column; gap: 6px; }
+.board-head { margin: 0 2px 4px; font-size: 15px; color: var(--ink-2); }
+.board-head strong { color: var(--ink); }
+.board-table { display: flex; flex-direction: column; }
+.board-row {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) 64px 64px 64px; align-items: center; gap: 6px;
+  min-height: 48px; padding: 0 4px; border-bottom: 1px solid var(--soft); font-size: 14px;
+}
+.board-row:last-child { border-bottom: none; }
+.board-cols { min-height: 28px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.board-row.is-lead { background: #FFF6DB; border-radius: 12px; border-bottom-color: transparent; }
+.board-row.is-gone { color: var(--muted); }
+.b-pos { text-align: center; font-family: var(--display); font-weight: 800; }
+.b-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.b-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.b-num { text-align: center; font-variant-numeric: tabular-nums; }
+.b-big { font-family: var(--display); font-weight: 800; font-size: 20px; }
+@media (max-width: 520px) {
+  .board-row { grid-template-columns: 24px minmax(0, 1fr) 62px 58px; }
+  .b-opt { display: none; }
+}
+.rounds { border-top: 1px solid var(--soft); margin: 4px -14px 0; padding: 0 14px; }
+.rounds summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--violet); }
+.rounds summary::-webkit-details-marker { display: none; }
+.rounds summary::after { content: '▾'; margin-left: 6px; }
+.rounds[open] summary::after { content: '▴'; }
+.rounds-list { list-style: none; margin: 0; padding: 0 0 10px; display: flex; flex-direction: column; gap: 10px; }
+.rounds-list li { display: flex; gap: 10px; align-items: flex-start; }
+.r-n { flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--soft); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 13px; }
+.r-t { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
+.r-t span { font-size: 13px; color: var(--muted); }
+
 /* ---------- Stats ---------- */
 
 .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
